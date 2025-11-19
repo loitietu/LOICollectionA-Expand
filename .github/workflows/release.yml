@@ -1,0 +1,270 @@
+name: Release Workflow
+
+on:
+    release:
+        types: [published]
+
+jobs:
+    build:
+        env:
+            sentry: ${{ secrets.SENTRY_DSN }} 
+        strategy:
+            fail-fast: false
+
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: xmake-io/github-action-setup-xmake@v1
+            - uses: actions/cache@v4
+              with:
+                path: |
+                    ~/AppData/Local/.xmake
+                key: xmake-${{ hashFiles('xmake.lua') }}
+                restore-keys: |
+                    xmake-
+            
+            - run: |
+                xmake repo -u
+            
+            - run: |
+                xmake f -a x64 -m release -p windows -v -y
+            
+            - run: |
+                xmake -v -y
+            
+            - name: Update manifest.json if Sentry DSN exists
+              shell: pwsh
+              run: |
+                $repoName = "${{ github.repository }}".Split('/')[1]
+                $manifestPath = "${{ github.workspace }}\build\bin\$repoName\manifest.json"
+                if (Test-Path $manifestPath) {
+                    $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+                    
+                    if (-not [string]::IsNullOrEmpty($env:sentry)) {
+                        if (-not $manifest.PSObject.Properties['extraInfo']) {
+                            $manifest | Add-Member -MemberType NoteProperty -Name "extraInfo" -Value @{}
+                        }
+                        $manifest.extraInfo.sentryDsn = $env:sentry
+                        $manifest.extraInfo.sentryUploadType = "sus"
+                        
+                        $manifest | ConvertTo-Json -Depth 10 | Set-Content $manifestPath
+                        Write-Host "Added Sentry DSN to manifest.json"
+                    } else {
+                        Write-Host "Sentry DSN not found, skipping manifest.json update"
+                    }
+                } else {
+                    Write-Host "manifest.json not found at $manifestPath"
+                }
+
+            - run: |
+                copy "${{ github.workspace }}\*.md" "${{ github.workspace }}\build\bin\"
+                copy "${{ github.workspace }}\LICENSE" "${{ github.workspace }}\build\bin\"
+
+            - uses: actions/upload-artifact@v4
+              with:
+                name: ${{ github.event.repository.name }}-windows-x64-${{ github.sha }}
+                path: |
+                    build/bin/
+
+    generate-notes:
+        runs-on: windows-latest
+        permissions:
+            contents: write
+        outputs:
+            release-notes: ${{ steps.compile-notes.outputs.release-notes }}
+            current_tag: ${{ steps.get-tags.outputs.current_tag }}
+            previous_tag: ${{ steps.get-tags.outputs.previous_tag }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+
+            - name: Determine Release Tags
+              id: get-tags
+              shell: pwsh
+              run: |
+                $ErrorActionPreference = 'Stop'
+                $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+
+                $tags = git tag --sort=-v:refname | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' }
+
+                if (-not $tags) {
+                    Write-Error "::error::No valid semantic tags (vX.Y.Z) found. Release aborted."
+                    exit 1
+                } else {
+                    $latestTag = $tags[0]
+                    
+                    if ($tags.Count -gt 1) {
+                        $prevTag = $tags[1]
+                    } else {
+                        $prevTag = git rev-list --max-parents=0 HEAD
+                    }
+
+                    "current_tag=$latestTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                    "previous_tag=$prevTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                }
+
+            - name: Extract Conventional Commits
+              id: extract-commits
+              shell: pwsh
+              run: |
+                $ErrorActionPreference = 'Stop'
+                $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+
+                $categories = @{
+                    "feat"     = "Features"
+                    "fix"      = "Bug Fixes"
+                    "docs"     = "Documentation"
+                    "perf"     = "Performance"
+                    "refactor" = "Refactors"
+                    "chore"    = "Maintenance"
+                    "revert"   = "Reverts"
+                    "ci"       = "CI/CD"
+                    "build"    = "Build System"
+                    "style"    = "Code Style"
+                    "test"     = "Tests"
+                }
+
+                $separator = [char]0x1F
+
+                $format = "%s${separator}%h${separator}%an"
+                $commits = git log --pretty=format:$format "${{ steps.get-tags.outputs.previous_tag }}..${{ steps.get-tags.outputs.current_tag }}"
+                $commitList = $commits -Split "`n"
+
+                "" | Out-File categorized.txt
+
+                foreach ($type in $categories.Keys) {
+                    $filtered = $commitList | Where-Object { $_ -imatch "^$type(\([a-zA-Z0-9-]+\))?:" }
+                    
+                    if ($filtered) {
+                        $notes = $filtered | ForEach-Object {
+                            $parts = $_ -Split $separator
+                            $message = $parts[0] -ireplace "^$type(\([^\)]+\))?:", ""
+                            $message = $message.Trim()
+                            '- ' + $message + ' `' + $parts[1] + '` by ' + $parts[2]
+                        }
+                        
+                        "$($categories[$type])||$($notes -Join "`n")" | Out-File -Append categorized.txt
+                    }
+                }
+
+                $breaking = git log --pretty=format:"%B" "${{ steps.get-tags.outputs.previous_tag }}..${{ steps.get-tags.outputs.current_tag }}" | ForEach-Object {
+                    if ($_ -match "BREAKING CHANGE:") { 
+                        $capture = $true
+                        ""
+                    } elseif ($capture) {
+                        if ($_.Trim() -eq "") { $capture = $false }
+                        else { "- $_" }
+                    }
+                } | Where-Object { $_ }
+
+                if ($breaking) {
+                    "BREAKING CHANGES||$($breaking -Join "`n")" | Out-File -Append categorized.txt
+                }
+
+                $EOF = (New-Guid).Guid
+                "categorized<<$EOF" >> $env:GITHUB_OUTPUT
+                $(Get-Content categorized.txt -Raw | Out-String -Width 9999) >> $env:GITHUB_OUTPUT
+                "$EOF" >> $env:GITHUB_OUTPUT
+
+            - name: Compile Release Notes
+              id: compile-notes
+              shell: pwsh
+              run: |
+                $ErrorActionPreference = 'Stop'
+                $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+
+                $NOTES = "## ${{ steps.get-tags.outputs.current_tag }} Release Notes`n`n"
+                $NOTES += "**Date:** $(Get-Date -Format 'yyyy-MM-dd')`n`n"
+                $NOTES += "**Compare:** ${{ steps.get-tags.outputs.previous_tag }}...${{ steps.get-tags.outputs.current_tag }}`n`n"
+
+                $priorityOrder = @(
+                    "BREAKING CHANGES", "Features", "Bug Fixes", "Performance",
+                    "Refactors", "Documentation", "CI/CD", "Build System",
+                    "Tests", "Code Style", "Maintenance", "Reverts"
+                )
+
+                $sortedCategories = @{}
+                $currentCategory = $null
+
+                Get-Content .\categorized.txt | 
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | 
+                ForEach-Object {
+                    $line = $_.Trim()
+                    
+                    if ($line -match '^(.*?)\|\|(.*)') {
+                        $currentCategory = $Matches[1].Trim()
+                        $content = $Matches[2].Trim()
+                        
+                        if (-not $sortedCategories.ContainsKey($currentCategory)) {
+                            $sortedCategories[$currentCategory] = @()
+                        }
+                        $sortedCategories[$currentCategory] += "- $content"
+                    } else {
+                        if ($currentCategory -ne $null) {
+                            $sortedCategories[$currentCategory] += "- $line"
+                        }
+                    }
+                }
+
+                foreach ($category in $priorityOrder) {
+                    if ($sortedCategories.ContainsKey($category) -and $sortedCategories[$category].Count -gt 0) {
+                        $NOTES += "### $category`n$($sortedCategories[$category] -join "`n")`n`n"
+                    }
+                }
+
+                $sortedCategories.Keys | Where-Object { $priorityOrder -notcontains $_ } | ForEach-Object {
+                    $NOTES += "### $_`n$($sortedCategories[$_] -join "`n")`n`n"
+                }
+
+                $NOTES += "---`n*Generated from [Conventional Commits](https://www.conventionalcommits.org/)*"
+
+                $EOF = (New-Guid).Guid
+                "release-notes<<$EOF" >> $env:GITHUB_OUTPUT 
+                $NOTES >> $env:GITHUB_OUTPUT
+                "$EOF" >> $env:GITHUB_OUTPUT
+
+            - uses: softprops/action-gh-release@v2
+              with:
+                body: |-
+                    ${{ steps.compile-notes.outputs.release-notes }}
+
+                    | File | SHA256 |
+                    | ---- | ------ |
+
+    upload-release-notes:
+        needs: 
+            - build
+            - generate-notes
+        permissions:
+            contents: write
+        runs-on: ubuntu-latest
+        strategy:
+            max-parallel: 1
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Download Artifact
+              uses: actions/download-artifact@v4
+              with:
+                name: ${{ github.event.repository.name }}-windows-x64-${{ github.sha }}
+                path: artifact
+
+            - name: Create ZIP Archive
+              run: |
+                zip -r ../${{ github.event.repository.name }}-windows-x64.zip *
+              working-directory: artifact
+
+            - name: Calculate SHA256
+              id: sha256
+              run: |
+                echo "release=$(sha256sum ${{ github.event.repository.name }}-windows-x64.zip | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+            - name: Update Release Assets
+              uses: softprops/action-gh-release@v2
+              with:
+                append_body: true
+                body: |-
+                    | ${{ github.event.repository.name }}-windows-x64.zip | ${{ steps.sha256.outputs.release }} |
+                files: |
+                    ${{ github.event.repository.name }}-windows-x64.zip
