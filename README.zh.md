@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/github/license/loitietu/LOICollectionA-Expand)](LICENSE)
 
 [![English](https://img.shields.io/badge/English-inactive?style=for-the-badge)](README.md)
-![中文](https://img.shields.io/badge/简体中文-informational?style=for-the-badge)
+[![中文](https://img.shields.io/badge/简体中文-informational?style=for-the-badge)](README.zh.md)
 
 LOICollectionA-Expand 是基于 LOICollectionA 的扩展插件，主要目的是添加部分受制于原项目架构而无法实现的功能。  
 

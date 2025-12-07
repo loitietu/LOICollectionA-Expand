@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/github/license/loitietu/LOICollectionA-Expand)](LICENSE)
 
 [![English](https://img.shields.io/badge/English-inactive?style=for-the-badge)](README.md)
-![中文](https://img.shields.io/badge/简体中文-informational?style=for-the-badge)
+[![中文](https://img.shields.io/badge/简体中文-informational?style=for-the-badge)](README.zh.md)
 
 LOICollectionA-Expand is an extension plugin based on LOICollectionA, primarily aimed at adding certain features that cannot be implemented due to the original project's architecture.
 
