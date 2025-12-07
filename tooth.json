@@ -19,6 +19,7 @@
             "platform": "win-x64",
             "dependencies": {
                 "github.com/LiteLDev/LeviLamina": "1.7.*",
+                "github.com/loitietu/LOICollectionA": "1.9.0",
                 "github.com/GroupMountain/GMLIB-Release": "1.7.*"
             },
             "assets": [

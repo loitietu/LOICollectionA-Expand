@@ -144,4 +144,4 @@ namespace LOICollectionA::Expands {
     }
 }
 
-REGISTRY_HELPER("GMLIBExpandExpand", LOICollectionA::Expands::GMLIBExpand, LOICollectionA::Expands::GMLIBExpand::getInstance())
+REGISTRY_HELPER("GMLIBExpand", LOICollectionA::Expands::GMLIBExpand, LOICollectionA::Expands::GMLIBExpand::getInstance())
