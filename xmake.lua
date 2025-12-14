@@ -7,7 +7,7 @@ set_xmakever("3.0.0")
 
 package("LOICollectionA")
     add_urls("https://github.com/loitietu/LOICollectionA.git")
-    add_versions("1.9.0", "e1af7bf87732dd6e6cf39ce85b88a66ac9093c31")
+    add_versions("1.9.1", "38b3169bd3c1211ac63ebc8e144090402cc712eb")
 
     on_install(function (package)
         import("package.tools.xmake").install(package)
@@ -15,7 +15,7 @@ package("LOICollectionA")
 package_end()
 
 add_requires("levilamina 1.7.7", {configs = {target_type = "server"}})
-add_requires("LOICollectionA 1.9.0")
+add_requires("LOICollectionA 1.9.1")
 add_requires("gmlib 1.7.0")
 add_requires(
     "levibuildscript",
@@ -27,7 +27,7 @@ if not has_config("vs_runtime") then
     set_runtimes("MD")
 end
 
-set_version("1.0.0")
+set_version("1.0.1")
 
 target("LOICollectionA-Expand")
     add_rules("@levibuildscript/linkrule")

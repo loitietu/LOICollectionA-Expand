@@ -21,10 +21,11 @@ namespace LOICollectionA::Events {
         return mPlayer;
     }
 
-    LL_STATIC_HOOK(
+    LL_TYPE_INSTANCE_HOOK(
         APIUtilsTranslateStringHook,
         HookPriority::Normal,
-        LOICollection::LOICollectionAPI::translateString,
+        LOICollection::LOICollectionAPI::APIUtils,
+        &LOICollection::LOICollectionAPI::APIUtils::translateString,
         std::string,
         const std::string& str,
         Player& player
@@ -37,10 +38,11 @@ namespace LOICollectionA::Events {
         return result;
     }
 
-    LL_STATIC_HOOK(
+    LL_TYPE_INSTANCE_HOOK(
         APIUtilsGetVariableStringHook,
         HookPriority::Normal,
-        LOICollection::LOICollectionAPI::getVariableString,
+        LOICollection::LOICollectionAPI::APIUtils,
+        &LOICollection::LOICollectionAPI::APIUtils::getVariableString,
         std::string,
         const std::string& str,
         Player& player
@@ -55,7 +57,7 @@ namespace LOICollectionA::Events {
 
     static std::unique_ptr<ll::event::EmitterBase> emitterFactory();
     class APIUtilsTranslateStringEventEmitter : public ll::event::Emitter<emitterFactory, APIUtilsTranslateStringEvent> {
-        ll::memory::HookRegistrar<APIUtilsTranslateStringHook> hook;
+        ll::memory::HookRegistrar<APIUtilsTranslateStringHook, APIUtilsGetVariableStringHook> hook;
     };
 
     static std::unique_ptr<ll::event::EmitterBase> emitterFactory() {
