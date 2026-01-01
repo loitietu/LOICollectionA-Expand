@@ -8,6 +8,11 @@ struct C_Config {
         bool ModuleEnabled = false;
         bool APIEngineVariable = true;
     } GMLIB;
+    struct C_ConfigEditor {
+        bool ModuleEnabled = false;
+        bool RegisteryCommand = true;
+        bool MonitorConfigFile = true;
+    } ConfigEditor;
 };
 
 namespace Config {

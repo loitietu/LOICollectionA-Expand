@@ -5,11 +5,11 @@
 #include <ll/api/Mod/NativeMod.h>
 #include <ll/api/Mod/RegisterHelper.h>
 
-#include <LOICollectionA/include/ModManager.h>
-#include <LOICollectionA/include/ModRegistry.h>
-
 #include <LOICollectionA/base/Wrapper.h>
 #include <LOICollectionA/base/ServiceProvider.h>
+
+#include "include/ModManager.h"
+#include "include/ModRegistry.h"
 
 #include "ConfigPlugin.h"
 
@@ -60,9 +60,9 @@ namespace LOICollectionA {
 
         logger.info("Initialization of configurations completed.");
 
-        std::vector<std::string> mMods = LOICollection::modules::ModManager::getInstance().mods();
+        std::vector<std::string> mMods = modules::ModManager::getInstance().mods();
         std::for_each(mMods.begin(), mMods.end(), [&logger](const std::string& mod) -> void {
-            LOICollection::modules::ModRegistry* mRegistry = LOICollection::modules::ModManager::getInstance().getRegistry(mod);
+            modules::ModRegistry* mRegistry = modules::ModManager::getInstance().getRegistry(mod);
 
             if (!mRegistry) {
                 logger.error("Failed to get mod registry for mod {}", mod);
@@ -80,9 +80,9 @@ namespace LOICollectionA {
     bool Expand::unload() {
         ll::io::Logger& logger = this->mSelf.getLogger();
 
-        std::vector<std::string> mMods = LOICollection::modules::ModManager::getInstance().mods();
+        std::vector<std::string> mMods = modules::ModManager::getInstance().mods();
         std::for_each(mMods.begin(), mMods.end(), [&logger](const std::string& mod) -> void {
-            LOICollection::modules::ModRegistry* mRegistry = LOICollection::modules::ModManager::getInstance().getRegistry(mod);
+            modules::ModRegistry* mRegistry = modules::ModManager::getInstance().getRegistry(mod);
 
             if (!mRegistry) {
                 logger.error("Failed to get mod registry for mod {}", mod);
@@ -98,9 +98,9 @@ namespace LOICollectionA {
     bool Expand::enable() {
         ll::io::Logger& logger = this->mSelf.getLogger();
 
-        std::vector<std::string> mMods = LOICollection::modules::ModManager::getInstance().mods();
+        std::vector<std::string> mMods = modules::ModManager::getInstance().mods();
         std::for_each(mMods.begin(), mMods.end(), [&logger](const std::string& mod) -> void {
-            LOICollection::modules::ModRegistry* mRegistry = LOICollection::modules::ModManager::getInstance().getRegistry(mod);
+            modules::ModRegistry* mRegistry = modules::ModManager::getInstance().getRegistry(mod);
 
             if (!mRegistry) {
                 logger.error("Failed to get mod registry for mod {}", mod);
@@ -116,9 +116,9 @@ namespace LOICollectionA {
     bool Expand::disable() {
         ll::io::Logger& logger = this->mSelf.getLogger();
 
-        std::vector<std::string> mMods = LOICollection::modules::ModManager::getInstance().mods();
+        std::vector<std::string> mMods = modules::ModManager::getInstance().mods();
         std::for_each(mMods.begin(), mMods.end(), [&logger](const std::string& mod) -> void {
-            LOICollection::modules::ModRegistry* mRegistry = LOICollection::modules::ModManager::getInstance().getRegistry(mod);
+            modules::ModRegistry* mRegistry = modules::ModManager::getInstance().getRegistry(mod);
 
             if (!mRegistry) {
                 logger.error("Failed to get mod registry for mod {}", mod);

@@ -19,6 +19,7 @@ LOICollectionA-Expand 是基于 LOICollectionA 的扩展插件，主要目的是
 > 以下功能模块均可在配置文件中进行配置开启或关闭。
 
 - [x] GMLIBExpand
+- [x] ConfigExpand
 
 ## 安装插件
 

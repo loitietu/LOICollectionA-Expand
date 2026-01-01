@@ -19,6 +19,7 @@ The project is currently still in development, and its features are not yet comp
 > All modules below can be enabled/disabled in the configuration file.
 
 - [x] GMLIBExpand
+- [x] ConfigExpand
 
 ## Installation
 

@@ -5,10 +5,7 @@
 namespace LOICollectionA::Expands {
     class GMLIBExpand {
     public:
-        static GMLIBExpand& getInstance() {
-            static GMLIBExpand instance;
-            return instance;
-        }
+        static GMLIBExpand& getInstance();
 
         void registerVariable();
         

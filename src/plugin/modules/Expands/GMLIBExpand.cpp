@@ -6,8 +6,6 @@
 
 #include <mc/world/actor/player/Player.h>
 
-#include <LOICollectionA/include/RegistryHelper.h>
-
 #include <LOICollectionA/base/Wrapper.h>
 #include <LOICollectionA/base/ServiceProvider.h>
 
@@ -18,13 +16,15 @@
 
 #include <gmlib/gm/papi/PlaceholderAPI.h>
 
+#include "include/RegistryHelper.h"
+
 #include "include/Events/APIEngineEvent.h"
 
 #include "utils/SystemUtils.h"
 
 #include "ConfigPlugin.h"
 
-#include "include/GMLIBExpand.h"
+#include "include/Expands/GMLIBExpand.h"
 
 namespace LOICollectionA::Expands {
     struct GMLIBExpand::Impl {
@@ -35,6 +35,11 @@ namespace LOICollectionA::Expands {
 
     GMLIBExpand::GMLIBExpand() : mImpl(std::make_unique<Impl>()) {}
     GMLIBExpand::~GMLIBExpand() = default;
+
+    GMLIBExpand& GMLIBExpand::getInstance() {
+        static GMLIBExpand instance;
+        return instance;
+    }
 
     void GMLIBExpand::registerVariable() {
         if (!this->mImpl->options.APIEngineVariable)
